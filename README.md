@@ -1,6 +1,6 @@
 # Rupa Silverworks contact API
 
-Standalone Go service deployed as a Vercel Function at `POST /api/contact`. The API validates input, verifies Cloudflare Turnstile, rate-limits repeated requests, and sends the inquiry through Mailbux SMTP over STARTTLS. This repository contains only the API service.
+Standalone Go service deployed with Vercel's Go Framework Preset at `POST /api/contact`. The API validates input, verifies Cloudflare Turnstile, rate-limits repeated requests, and sends the inquiry through Mailbux SMTP over STARTTLS. This repository contains only the API service.
 
 ## Local setup
 

@@ -1,8 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "api/contact.go": {
-      "maxDuration": 20
-    }
-  }
+  "framework": "go"
 }
