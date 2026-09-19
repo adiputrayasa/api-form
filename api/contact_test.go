@@ -88,3 +88,41 @@ func TestMessageHeaders(t *testing.T) {
 		}
 	}
 }
+
+func TestOfficialTurnstileTestSecrets(t *testing.T) {
+	for _, secret := range []string{testSecretPass, testSecretFail, testSecretSpent} {
+		if !isOfficialTurnstileTestSecret(secret) {
+			t.Fatal("expected official test secret to be recognized")
+		}
+	}
+	if isOfficialTurnstileTestSecret("production-secret") {
+		t.Fatal("production secret must not be recognized as a test secret")
+	}
+}
+
+func TestTurnstileTestSecretAllowsMissingHostnameAndAction(t *testing.T) {
+	now := time.Now()
+	result := turnstileResponse{
+		Success:     true,
+		ChallengeTS: now.Format(time.RFC3339Nano),
+	}
+	hosts := map[string]struct{}{"localhost": {}}
+
+	if !turnstileResponseIsValid(result, testSecretPass, hosts, now) {
+		t.Fatal("official test secret should allow missing hostname and action")
+	}
+	if turnstileResponseIsValid(result, "production-secret", hosts, now) {
+		t.Fatal("production secret must reject missing hostname and action")
+	}
+
+	result.Hostname = "localhost"
+	result.Action = contactAction
+	if !turnstileResponseIsValid(result, "production-secret", hosts, now) {
+		t.Fatal("production secret should accept matching hostname and action")
+	}
+
+	result.ChallengeTS = now.Add(-6 * time.Minute).Format(time.RFC3339Nano)
+	if turnstileResponseIsValid(result, testSecretPass, hosts, now) {
+		t.Fatal("test secret must still reject expired challenges")
+	}
+}

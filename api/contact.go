@@ -28,6 +28,9 @@ const (
 	maxTurnstileToken = 2048
 	turnstileEndpoint = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 	contactAction     = "contact"
+	testSecretPass    = "1x0000000000000000000000000000000AA"
+	testSecretFail    = "2x0000000000000000000000000000000AA"
+	testSecretSpent   = "3x0000000000000000000000000000000AA"
 	rateLimitRequests = 5
 	rateLimitWindow   = 10 * time.Minute
 	publicError       = "We could not send your inquiry. Please try again."
@@ -339,24 +342,36 @@ func verifyTurnstile(ctx context.Context, token, remoteIP string, allowedHosts m
 	if err := json.NewDecoder(io.LimitReader(response.Body, 16*1024)).Decode(&result); err != nil {
 		return false, fmt.Errorf("decode verification: %w", err)
 	}
+	return turnstileResponseIsValid(result, secret, allowedHosts, time.Now()), nil
+}
+
+func isOfficialTurnstileTestSecret(secret string) bool {
+	switch secret {
+	case testSecretPass, testSecretFail, testSecretSpent:
+		return true
+	default:
+		return false
+	}
+}
+
+func turnstileResponseIsValid(result turnstileResponse, secret string, allowedHosts map[string]struct{}, now time.Time) bool {
 	if !result.Success {
-		return false, nil
+		return false
 	}
-	if _, ok := allowedHosts[normalizeHostname(result.Hostname)]; !ok {
-		return false, nil
-	}
-	if result.Action != contactAction {
-		return false, nil
+	if !isOfficialTurnstileTestSecret(secret) {
+		if _, ok := allowedHosts[normalizeHostname(result.Hostname)]; !ok {
+			return false
+		}
+		if result.Action != contactAction {
+			return false
+		}
 	}
 	issuedAt, err := time.Parse(time.RFC3339Nano, result.ChallengeTS)
 	if err != nil {
-		return false, nil
+		return false
 	}
-	age := time.Since(issuedAt)
-	if age < -time.Minute || age > 5*time.Minute {
-		return false, nil
-	}
-	return true, nil
+	age := now.Sub(issuedAt)
+	return age >= -time.Minute && age <= 5*time.Minute
 }
 
 func sendEmail(ctx context.Context, input contactRequest) error {

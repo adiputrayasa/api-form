@@ -18,6 +18,8 @@ Use Cloudflare's official test secret locally. The Turnstile site key belongs in
 
 For the separate local frontend, use Cloudflare's always-pass test site key `1x00000000000000000000AA`, render the widget with action `contact`, and send the resulting token to this API. Submissions with real Mailbux credentials send real email.
 
+Cloudflare's exact official test secrets are allowed to omit `hostname` and `action` in the Siteverify response. Production secrets always require an allowed hostname and the `contact` action.
+
 ## Vercel environment variables
 
 Configure all variables from `.env.example` as server-side environment variables in Vercel.
